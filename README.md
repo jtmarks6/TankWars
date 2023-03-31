@@ -19,7 +19,7 @@ Tank Wars will be a similar game to the tank game from WiiPlay. The goal is to s
 
 ![Game Preview](assets/current_progress.png)
 
+[Video of current progress](https://youtu.be/XLVG5Eh4Rpg)
+
 # Run Game
 `python3 main.py`
-
-[Video of current progress](https://youtu.be/XLVG5Eh4Rpg)
