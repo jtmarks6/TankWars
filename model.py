@@ -3,21 +3,30 @@ import pygame
 BITS = 32
 
 class Player_Tank(pygame.sprite.Sprite):
-    def __init__(self, x: int, y: int, speed: int, bullet_speed: int, bullets: pygame.sprite.Group):
+    def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group):
         super().__init__()
 
         self.image = pygame.image.load('assets/tank.png')
         self.speed = speed
-
+        self.bullets = bullets
+        self.shot_bullets = pygame.sprite.Group()
+        self.bullet_speed = bullet_speed
+        self.max_bullets = max_bullets
+        self.debounce = False
         self.rect = self.image.get_rect()
+
         self.rect.x = x
         self.rect.y = y
-        self.bullets = bullets
-        self.bullet_speed = bullet_speed
 
     def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group):
-        if mouse_pressed[0]:  # TODO add debounce and bullet counter
-            self.bullets.add(Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), self.bullet_speed, walls))
+        if mouse_pressed[0]:
+            if not self.debounce and len(self.shot_bullets.sprites()) < self.max_bullets:
+                bullet = Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), self.bullet_speed, walls)
+                self.shot_bullets.add(bullet)
+                self.bullets.add(bullet)
+                self.debounce = True
+        else:
+            self.debounce = False
 
         if keys[pygame.K_w]:
             self.rect = self.rect.move(0, -self.speed)
@@ -38,8 +47,6 @@ class Player_Tank(pygame.sprite.Sprite):
             self.rect = self.rect.move(self.speed, 0)
             if pygame.sprite.spritecollideany(self, walls):
                 self.rect = self.rect.move(-self.speed, 0)
-        
-        self.bullets.update()
 
 class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
     def __init__(self, x: int, y: int, speed: int, walls: pygame.sprite.Group):
@@ -51,20 +58,21 @@ class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
         self.movement_vector = mouse_x - x, mouse_y - y
         self.bounces = 0
         self.walls = walls
-
         self.rect = self.image.get_rect()
+
         self.rect.x = x
         self.rect.y = y
 
-    def update(self):
-        x = (self.movement_vector[0]/(((self.movement_vector[0] **
-             2) + (self.movement_vector[1] ** 2)) ** .5)) * self.speed
-        y = (self.movement_vector[1]/(((self.movement_vector[0] **
-             2) + (self.movement_vector[1] ** 2)) ** .5)) * self.speed
+    def update(self, player_tanks: pygame.sprite.Group, enemy_tanks: pygame.sprite.Group):
+        x = (self.movement_vector[0]/(((self.movement_vector[0] ** 2) + (self.movement_vector[1] ** 2)) ** .5)) * self.speed
+        y = (self.movement_vector[1]/(((self.movement_vector[0] ** 2) + (self.movement_vector[1] ** 2)) ** .5)) * self.speed
         self.rect = self.rect.move(x, y)
 
-        collide_list = pygame.sprite.spritecollide(self, self.walls, False)
-        for wall in collide_list:
+        # pygame.sprite.spritecollide(self, player_tanks, True)
+        pygame.sprite.spritecollide(self, enemy_tanks, True)
+
+        wall_collide_list = pygame.sprite.spritecollide(self, self.walls, False)
+        for wall in wall_collide_list:
             if self.bounces > 0:
                 self.kill()
             else:

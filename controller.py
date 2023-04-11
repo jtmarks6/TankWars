@@ -9,6 +9,7 @@ TANK_SPEED = 4
 BOARD_WIDTH = 23
 BOARD_HEIGHT = 17
 BULLET_SPEED = 8
+MAX_BULLETS = 2
 
 BITS = 32
 FPS = 60
@@ -70,7 +71,7 @@ class TankWarsController():
 
         bgd = self.screen.copy()
         self.walls.draw(self.screen)
-        player1 = self.model.Player_Tank(BITS, BITS, TANK_SPEED, BULLET_SPEED, self.bullets)
+        player1 = self.model.Player_Tank(BITS, BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets)
         self.player_tanks.add(player1)
         self.generate_walls(self.board, self.walls)
 
@@ -86,6 +87,7 @@ class TankWarsController():
             keys = pygame.key.get_pressed()
 
             self.player_tanks.update(keys, mouse_pressed, self.walls)
+            self.bullets.update(self.player_tanks, self.enemy_tanks)
             self.view.draw_game(self.screen, bgd, self.sprites)
             clock.tick(FPS)
 
