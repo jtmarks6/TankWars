@@ -1,6 +1,5 @@
 import pygame
-from model import *
-from view import *
+import random
 
 SURFACE_COLOR = (233, 204, 149)
 
@@ -14,71 +13,80 @@ BULLET_SPEED = 8
 BITS = 32
 FPS = 60
 
-pygame.init()
+class TankWarsController():
+    def __init__(self, model, view):
+        pygame.init()
 
-player_tanks = pygame.sprite.Group()
-enemy_tanks = pygame.sprite.Group()
-walls = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
+        self.model = model
+        self.view = view
+        self.player_tanks = pygame.sprite.Group()
+        self.enemy_tanks = pygame.sprite.Group()
+        self.walls = pygame.sprite.Group()
+        self.bullets = pygame.sprite.Group()
+        self.sprites = [self.player_tanks, self.enemy_tanks, self.walls, self.bullets]
 
-row = [False] * BOARD_WIDTH
-board = []
-for _ in range(BOARD_HEIGHT):
-    board.append(row.copy())
-del row
+        # Create 2d array for board
+        row = [False] * BOARD_WIDTH
+        self.board = []
+        for _ in range(BOARD_HEIGHT):
+            self.board.append(row.copy())
 
-def generate_walls(self, board: list[list[bool]], walls: pygame.sprite.Group):
-    for j in range(len(board[0])):
-        board[0][j] = True
+        size = (SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.screen = pygame.display.set_mode(size)
+        self.screen.fill(SURFACE_COLOR)
+        pygame.display.set_caption("Tank Wars")
 
-    for j in range(len(board[0])):
-        board[-1][j] = True
-
-    for i in range(len(board)):
-        board[i][0] = True
-
-    for i in range(len(board)):
-        board[i][-1] = True
-
-    wall_probability = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-    for i in range(len(board)):
+    def generate_walls(self, board: list[list[bool]], walls: pygame.sprite.Group):
         for j in range(len(board[0])):
-            if wall_probability[random.randint(0, 9)]:
-                board[i][j] = True
+            board[0][j] = True
 
-    # TODO combine close walls and connect some random ones
-
-    for i in range(len(board)):
         for j in range(len(board[0])):
-            if board[i][j]:
-                walls.add(Wall(j * BITS, i * BITS))
+            board[-1][j] = True
 
-generate_walls(board, walls)
+        for i in range(len(board)):
+            board[i][0] = True
 
-size = (SCREEN_WIDTH, SCREEN_HEIGHT)
-screen = pygame.display.set_mode(size)
-screen.fill(SURFACE_COLOR)
-walls.draw(screen)
-bgd = screen.copy()
-pygame.display.set_caption("Tank Wars")
+        for i in range(len(board)):
+            board[i][-1] = True
 
-player1 = Player_Tank(BITS, BITS, TANK_SPEED, BULLET_SPEED)
-player_tanks.add(player1)
+        wall_probability = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if wall_probability[random.randint(0, 9)]:
+                    board[i][j] = True
 
-exit = True
-clock = pygame.time.Clock()
+        # TODO combine close walls and connect some random ones
 
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if board[i][j]:
+                    walls.add(self.model.Wall(j * BITS, i * BITS))
 
-while exit:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            exit = False
+    def start(self):
+        # gen walls each round
+        # set new bgd with walls
+        # create new player tank and enemy tanks
+        # loop until level is done
 
-    mouse_pressed = pygame.mouse.get_pressed()
-    keys = pygame.key.get_pressed()
+        bgd = self.screen.copy()
+        self.walls.draw(self.screen)
+        player1 = self.model.Player_Tank(BITS, BITS, TANK_SPEED, BULLET_SPEED, self.bullets)
+        self.player_tanks.add(player1)
+        self.generate_walls(self.board, self.walls)
 
-    player_tanks.update(keys, mouse_pressed)
-    draw_game()
-    clock.tick(FPS)
+        exit = True
+        clock = pygame.time.Clock()
 
-pygame.quit()
+        while exit:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit = False
+
+            mouse_pressed = pygame.mouse.get_pressed()
+            keys = pygame.key.get_pressed()
+
+            self.player_tanks.update(keys, mouse_pressed, self.walls)
+            self.view.draw_game(self.screen, bgd, self.sprites)
+            clock.tick(FPS)
+
+        pygame.quit()
