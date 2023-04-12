@@ -7,11 +7,17 @@ WALL = 1
 TANK = 2
 BOMB = 3
 
+RIGHT_ANGLE = 270
+UP_ANGLE = 0
+LEFT_ANGLE = 90
+DOWN_ANGLE = 180
+
 class Player_Tank(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
         super().__init__()
 
-        self.image = pygame.image.load('assets/tank.png')
+        self.original_image = pygame.image.load('assets/tank.png')
+        self.image = self.original_image
         self.speed = speed
         self.bullets = bullets
         self.shot_bullets = pygame.sprite.Group()
@@ -21,6 +27,7 @@ class Player_Tank(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.board = board
         self.last_board_pos = (x // BITS, y // BITS)
+        self.angle = 0
 
         self.rect.x = x
         self.rect.y = y
@@ -36,26 +43,55 @@ class Player_Tank(pygame.sprite.Sprite):
         else:
             self.debounce = False
 
-        if keys[pygame.K_w]:
-            self.rect = self.rect.move(0, -self.speed)
-            if pygame.sprite.spritecollideany(self, walls):
-                self.rect = self.rect.move(0, self.speed)
+        move_x = 0
+        move_y = 0
+        x_angle = 0
+        y_angle = 0
+        if keys[pygame.K_w] ^ keys[pygame.K_s]:
+            if keys[pygame.K_w]:
+                move_y = -self.speed
+                y_angle = UP_ANGLE
 
-        if keys[pygame.K_s]:
-            self.rect = self.rect.move(0, self.speed)
-            if pygame.sprite.spritecollideany(self, walls):
-                self.rect = self.rect.move(0, -self.speed)
+            elif keys[pygame.K_s]:
+                move_y = self.speed
+                y_angle = DOWN_ANGLE
 
-        if keys[pygame.K_a]:
-            self.rect = self.rect.move(-self.speed, 0)
+            self.rect = self.rect.move(0, move_y)
             if pygame.sprite.spritecollideany(self, walls):
-                self.rect = self.rect.move(self.speed, 0)
+                self.rect = self.rect.move(0, -move_y)
+        else:
+            y_angle = None
 
-        if keys[pygame.K_d]:
-            self.rect = self.rect.move(self.speed, 0)
+        if keys[pygame.K_a] ^ keys[pygame.K_d]:
+            if keys[pygame.K_a]:
+                move_x = -self.speed
+                x_angle = LEFT_ANGLE
+            elif keys[pygame.K_d]:
+                move_x = self.speed
+                x_angle = RIGHT_ANGLE
+                if keys[pygame.K_w]:
+                    y_angle = 360
+
+            self.rect = self.rect.move(move_x, 0)
             if pygame.sprite.spritecollideany(self, walls):
-                self.rect = self.rect.move(-self.speed, 0)
-        
+                self.rect = self.rect.move(-move_x, 0)
+        else:
+            x_angle = None
+
+        if x_angle == None and y_angle == None:
+            target_angle = self.angle
+        elif x_angle == None:
+            target_angle = y_angle
+        elif y_angle == None:
+            target_angle = x_angle
+        else:
+            target_angle = (x_angle + y_angle) / 2
+
+        if target_angle != self.angle:
+            self.image = pygame.transform.rotate(self.original_image, target_angle)
+            self.rect = self.image.get_rect(center=self.rect.center)
+            self.angle = target_angle
+
         x_index = self.rect.x // BITS
         y_index = self.rect.y // BITS
         if (x_index, y_index) != self.last_board_pos:
@@ -77,13 +113,17 @@ class Enemy_Tank(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.board = board
         self.last_board_pos = (x // BITS, y // BITS)
+        self.angle = 0
 
         self.rect.x = x
         self.rect.y = y
         self.board[y // BITS][x // BITS] = TANK
 
-    def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group):
+    def update(self, walls: pygame.sprite.Group):
         pass
+        # self.image = pygame.transform.rotate(self.image, 45)
+        # self.rect = self.image.get_rect(center=self.rect.center)
+
         # if mouse_pressed[0]:
         #     if not self.debounce and len(self.shot_bullets.sprites()) < self.max_bullets:
         #         bullet = Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), self.bullet_speed, walls)

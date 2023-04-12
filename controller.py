@@ -6,13 +6,13 @@ SURFACE_COLOR = (233, 204, 149)
 
 SCREEN_WIDTH = 736
 SCREEN_HEIGHT = 544
-TANK_SPEED = 4
+TANK_SPEED = 2
 BOARD_WIDTH = 23
 BOARD_HEIGHT = 17
 BULLET_SPEED = 8
 MAX_BULLETS = 2
 
-FPS = 60
+FPS = 120
 
 class TankWarsController():
     def __init__(self, model, view):
@@ -51,10 +51,9 @@ class TankWarsController():
         for i in range(len(board)):
             board[i][-1] = WALL
 
-        wall_probability = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         for i in range(len(board)):
             for j in range(len(board[0])):
-                if wall_probability[random.randint(0, 9)] and board[i][j] == EMPTY:
+                if random.random() > .9 and board[i][j] == EMPTY:
                     board[i][j] = WALL
 
         # TODO combine close walls and connect some random ones
@@ -65,7 +64,6 @@ class TankWarsController():
                     walls.add(self.model.Wall(j * BITS, i * BITS))
 
     def generate_new_level(self):
-        # Clear previous level
         row = [EMPTY] * BOARD_WIDTH
         for i in range(BOARD_HEIGHT):
             self.board[i] = row.copy()
@@ -77,18 +75,20 @@ class TankWarsController():
 
         self.screen.fill(SURFACE_COLOR)
         self.bgd = self.screen.copy()
+
         self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
-        for _ in range(random.randint(1, 6)): # TODO fix could spawn on top of each other
-            self.enemy_tanks.add(self.model.Enemy_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
+        for _ in range(random.randint(1, 6)): # TODO choose number of tanks range with wave number
+            enemy_x = random.randrange(1, BOARD_WIDTH - 1)
+            enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
+            while self.board[enemy_y][enemy_x] != EMPTY:
+                enemy_x = random.randrange(1, BOARD_WIDTH - 1)
+                enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
+
+            self.enemy_tanks.add(self.model.Enemy_Tank(enemy_x * BITS, enemy_y * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
+
         self.generate_walls(self.board, self.walls)
 
-
     def start(self):
-        # gen walls each round
-        # set new bgd with walls
-        # create new player tank and enemy tanks
-        # loop until level is done
-
         exit = True
         clock = pygame.time.Clock()
 
@@ -104,6 +104,7 @@ class TankWarsController():
             keys = pygame.key.get_pressed()
 
             self.player_tanks.update(keys, mouse_pressed, self.walls)
+            self.enemy_tanks.update(self.walls)
             self.bullets.update(self.player_tanks, self.enemy_tanks)
             self.view.draw_game(self.screen, self.bgd, self.sprites)
             clock.tick(FPS)
