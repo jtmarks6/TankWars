@@ -25,6 +25,7 @@ class TankWarsController():
         self.walls = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
         self.sprites = [self.player_tanks, self.enemy_tanks, self.walls, self.bullets]
+        self.player_board_pos = ()
 
         # Create 2d array for board
         row = [EMPTY] * BOARD_WIDTH
@@ -77,7 +78,7 @@ class TankWarsController():
         self.bgd = self.screen.copy()
 
         self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
-        for _ in range(random.randint(1, 6)): # TODO choose number of tanks range with wave number
+        for _ in range(random.randint(1,1)): # TODO choose number of tanks range with wave number
             enemy_x = random.randrange(1, BOARD_WIDTH - 1)
             enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
             while self.board[enemy_y][enemy_x] != EMPTY:
@@ -104,7 +105,9 @@ class TankWarsController():
             keys = pygame.key.get_pressed()
 
             self.player_tanks.update(keys, mouse_pressed, self.walls, self.enemy_tanks)
-            self.enemy_tanks.update(self.walls)
+            for tank in self.player_tanks:
+                self.player_board_pos = tank.get_pos()
+            self.enemy_tanks.update(self.walls, self.player_board_pos)
             self.bullets.update(self.player_tanks, self.enemy_tanks)
             self.view.draw_game(self.screen, self.bgd, self.sprites)
             clock.tick(FPS)

@@ -1,4 +1,6 @@
 import pygame
+import path_finding
+import math
 
 BITS = 32
 
@@ -16,7 +18,7 @@ class Player_Tank(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
         super().__init__()
 
-        self.original_image = pygame.image.load('assets/tank.png').convert_alpha()
+        self.original_image = pygame.image.load('assets/tank.png')
         self.image = self.original_image
         self.speed = speed
         self.bullets = bullets
@@ -73,7 +75,7 @@ class Player_Tank(pygame.sprite.Sprite):
                     y_angle = 360
 
             self.rect = self.rect.move(move_x, 0)
-            if pygame.sprite.spritecollideany(self, walls)  or pygame.sprite.spritecollideany(self, enemy_tanks):
+            if pygame.sprite.spritecollideany(self, walls) or pygame.sprite.spritecollideany(self, enemy_tanks):
                 self.rect = self.rect.move(-move_x, 0)
         else:
             x_angle = None
@@ -98,13 +100,17 @@ class Player_Tank(pygame.sprite.Sprite):
             self.board[self.last_board_pos[1]][self.last_board_pos[0]] = EMPTY
             self.board[y_index][x_index] = TANK
             self.last_board_pos = (x_index, y_index)
+    
+    def get_pos(self) -> tuple:
+        return (self.last_board_pos[0] - 1, self.last_board_pos[1])
+        return self.last_board_pos
 
 class Enemy_Tank(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
         super().__init__()
 
-        self.image = pygame.image.load('assets/enemy_tank.png').convert_alpha()
-        self.image.set_colorkey((0,0,0))
+        self.original_image = pygame.image.load('assets/enemy_tank.png')
+        self.image = self.original_image
         self.speed = speed
         self.bullets = bullets
         self.shot_bullets = pygame.sprite.Group()
@@ -115,51 +121,49 @@ class Enemy_Tank(pygame.sprite.Sprite):
         self.board = board
         self.last_board_pos = (x // BITS, y // BITS)
         self.angle = 0
+        self.path = []
+        self.path_index = 0
+        self.last_player_pos = ()
 
         self.rect.x = x
         self.rect.y = y
         self.board[y // BITS][x // BITS] = TANK
 
-    def update(self, walls: pygame.sprite.Group):
-        pass
-        # self.image = pygame.transform.rotate(self.image, 45)
-        # self.rect = self.image.get_rect(center=self.rect.center)
+    def update(self, walls: pygame.sprite.Group, player_pos: tuple):
+        def find_path():
+            start_pos = (self.rect.x // BITS, self.rect.y // BITS)
+            self.path = path_finding.a_star(self.board, start_pos, player_pos)
+            self.path_index = 0
+            self.last_player_pos = player_pos
 
-        # if mouse_pressed[0]:
-        #     if not self.debounce and len(self.shot_bullets.sprites()) < self.max_bullets:
-        #         bullet = Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), self.bullet_speed, walls)
-        #         self.shot_bullets.add(bullet)
-        #         self.bullets.add(bullet)
-        #         self.debounce = True
-        # else:
-        #     self.debounce = False
+        if self.path and self.path_index < len(self.path):
+            target_cell = self.path[self.path_index]
+            target_x = target_cell[0] * BITS
+            target_y = target_cell[1] * BITS
+            
+            # Calculate the direction to move in
+            dx = target_x - self.rect.x
+            dy = target_y - self.rect.y
+            dist = math.sqrt(dx ** 2 + dy ** 2)
+            
+            if dist > self.speed:
+                # Move towards the target
+                direction = math.atan2(dy, dx)
+                self.rect.x += math.cos(direction) * self.speed
+                self.rect.y += math.sin(direction) * self.speed
 
-        # if keys[pygame.K_w]:
-        #     self.rect = self.rect.move(0, -self.speed)
-        #     if pygame.sprite.spritecollideany(self, walls):
-        #         self.rect = self.rect.move(0, self.speed)
-
-        # if keys[pygame.K_s]:
-        #     self.rect = self.rect.move(0, self.speed)
-        #     if pygame.sprite.spritecollideany(self, walls):
-        #         self.rect = self.rect.move(0, -self.speed)
-
-        # if keys[pygame.K_a]:
-        #     self.rect = self.rect.move(-self.speed, 0)
-        #     if pygame.sprite.spritecollideany(self, walls):
-        #         self.rect = self.rect.move(self.speed, 0)
-
-        # if keys[pygame.K_d]:
-        #     self.rect = self.rect.move(self.speed, 0)
-        #     if pygame.sprite.spritecollideany(self, walls):
-        #         self.rect = self.rect.move(-self.speed, 0)
-        
-        # x_index = self.rect.x // BITS
-        # y_index = self.rect.y // BITS
-        # if (x_index, y_index) != self.last_board_pos:
-        #     self.board[self.last_board_pos[1]][self.last_board_pos[0]] = EMPTY
-        #     self.board[y_index][x_index] = TANK
-        #     self.last_board_pos = (x_index, y_index)
+                angle = math.degrees(-direction) - 90
+                self.image = pygame.transform.rotate(self.original_image, angle)
+                self.rect = self.image.get_rect(center=self.rect.center)
+            else:
+                # Move to the next cell in the path
+                self.rect.x = target_x
+                self.rect.y = target_y
+                self.path_index += 1
+                if player_pos != self.last_player_pos:
+                    find_path()
+        else:
+            find_path()
 
 class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
     def __init__(self, x: int, y: int, speed: int, walls: pygame.sprite.Group):
