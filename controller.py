@@ -1,5 +1,6 @@
 import pygame
 import random
+from model import (EMPTY, WALL, TANK, BOMB, BITS)
 
 SURFACE_COLOR = (233, 204, 149)
 
@@ -11,7 +12,6 @@ BOARD_HEIGHT = 17
 BULLET_SPEED = 8
 MAX_BULLETS = 2
 
-BITS = 32
 FPS = 60
 
 class TankWarsController():
@@ -27,7 +27,7 @@ class TankWarsController():
         self.sprites = [self.player_tanks, self.enemy_tanks, self.walls, self.bullets]
 
         # Create 2d array for board
-        row = [False] * BOARD_WIDTH
+        row = [EMPTY] * BOARD_WIDTH
         self.board = []
         for _ in range(BOARD_HEIGHT):
             self.board.append(row.copy())
@@ -39,28 +39,28 @@ class TankWarsController():
 
     def generate_walls(self, board: list[list[bool]], walls: pygame.sprite.Group):
         for j in range(len(board[0])):
-            board[0][j] = True
+            board[0][j] = WALL
 
         for j in range(len(board[0])):
-            board[-1][j] = True
+            board[-1][j] = WALL
 
         for i in range(len(board)):
-            board[i][0] = True
+            board[i][0] = WALL
 
         for i in range(len(board)):
-            board[i][-1] = True
+            board[i][-1] = WALL
 
         wall_probability = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         for i in range(len(board)):
             for j in range(len(board[0])):
-                if wall_probability[random.randint(0, 9)]:
-                    board[i][j] = True
+                if wall_probability[random.randint(0, 9)] and board[i][j] == EMPTY:
+                    board[i][j] = WALL
 
         # TODO combine close walls and connect some random ones
 
         for i in range(len(board)):
             for j in range(len(board[0])):
-                if board[i][j]:
+                if board[i][j] == WALL:
                     walls.add(self.model.Wall(j * BITS, i * BITS))
 
     def start(self):
@@ -71,8 +71,7 @@ class TankWarsController():
 
         bgd = self.screen.copy()
         self.walls.draw(self.screen)
-        player1 = self.model.Player_Tank(BITS, BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets)
-        self.player_tanks.add(player1)
+        self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH) * BITS, random.randrange(1, BOARD_HEIGHT) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
         self.generate_walls(self.board, self.walls)
 
         exit = True

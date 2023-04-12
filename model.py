@@ -2,8 +2,13 @@ import pygame
 
 BITS = 32
 
+EMPTY = 0
+WALL = 1
+TANK = 2
+BOMB = 3
+
 class Player_Tank(pygame.sprite.Sprite):
-    def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group):
+    def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
         super().__init__()
 
         self.image = pygame.image.load('assets/tank.png')
@@ -14,9 +19,12 @@ class Player_Tank(pygame.sprite.Sprite):
         self.max_bullets = max_bullets
         self.debounce = False
         self.rect = self.image.get_rect()
+        self.board = board
+        self.last_board_pos = (x // BITS, y // BITS)
 
         self.rect.x = x
         self.rect.y = y
+        self.board[y // BITS][x // BITS] = TANK
 
     def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group):
         if mouse_pressed[0]:
@@ -47,6 +55,13 @@ class Player_Tank(pygame.sprite.Sprite):
             self.rect = self.rect.move(self.speed, 0)
             if pygame.sprite.spritecollideany(self, walls):
                 self.rect = self.rect.move(-self.speed, 0)
+        
+        x_index = self.rect.x // BITS
+        y_index = self.rect.y // BITS
+        if (x_index, y_index) != self.last_board_pos:
+            self.board[self.last_board_pos[1]][self.last_board_pos[0]] = EMPTY
+            self.board[y_index][x_index] = TANK
+            self.last_board_pos = (x_index, y_index)
 
 class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
     def __init__(self, x: int, y: int, speed: int, walls: pygame.sprite.Group):
