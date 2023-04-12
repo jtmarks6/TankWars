@@ -16,7 +16,7 @@ class Player_Tank(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
         super().__init__()
 
-        self.original_image = pygame.image.load('assets/tank.png')
+        self.original_image = pygame.image.load('assets/tank.png').convert_alpha()
         self.image = self.original_image
         self.speed = speed
         self.bullets = bullets
@@ -33,8 +33,8 @@ class Player_Tank(pygame.sprite.Sprite):
         self.rect.y = y
         self.board[y // BITS][x // BITS] = TANK
 
-    def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group):
-        if mouse_pressed[0]:
+    def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group, enemy_tanks: pygame.sprite.Group):
+        if mouse_pressed[0]: # TODO use https://www.reddit.com/r/gamedev/comments/lovizf/angle_between_player_and_target_in_degrees/ to animate
             if not self.debounce and len(self.shot_bullets.sprites()) < self.max_bullets:
                 bullet = Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), self.bullet_speed, walls)
                 self.shot_bullets.add(bullet)
@@ -57,7 +57,7 @@ class Player_Tank(pygame.sprite.Sprite):
                 y_angle = DOWN_ANGLE
 
             self.rect = self.rect.move(0, move_y)
-            if pygame.sprite.spritecollideany(self, walls):
+            if pygame.sprite.spritecollideany(self, walls) or pygame.sprite.spritecollideany(self, enemy_tanks):
                 self.rect = self.rect.move(0, -move_y)
         else:
             y_angle = None
@@ -73,7 +73,7 @@ class Player_Tank(pygame.sprite.Sprite):
                     y_angle = 360
 
             self.rect = self.rect.move(move_x, 0)
-            if pygame.sprite.spritecollideany(self, walls):
+            if pygame.sprite.spritecollideany(self, walls)  or pygame.sprite.spritecollideany(self, enemy_tanks):
                 self.rect = self.rect.move(-move_x, 0)
         else:
             x_angle = None
@@ -103,7 +103,8 @@ class Enemy_Tank(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
         super().__init__()
 
-        self.image = pygame.image.load('assets/enemy_tank.png')
+        self.image = pygame.image.load('assets/enemy_tank.png').convert_alpha()
+        self.image.set_colorkey((0,0,0))
         self.speed = speed
         self.bullets = bullets
         self.shot_bullets = pygame.sprite.Group()

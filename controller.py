@@ -6,13 +6,13 @@ SURFACE_COLOR = (233, 204, 149)
 
 SCREEN_WIDTH = 736
 SCREEN_HEIGHT = 544
-TANK_SPEED = 2
+TANK_SPEED = 4
 BOARD_WIDTH = 23
 BOARD_HEIGHT = 17
 BULLET_SPEED = 8
 MAX_BULLETS = 2
 
-FPS = 120
+FPS = 60
 
 class TankWarsController():
     def __init__(self, model, view):
@@ -103,7 +103,7 @@ class TankWarsController():
             mouse_pressed = pygame.mouse.get_pressed()
             keys = pygame.key.get_pressed()
 
-            self.player_tanks.update(keys, mouse_pressed, self.walls)
+            self.player_tanks.update(keys, mouse_pressed, self.walls, self.enemy_tanks)
             self.enemy_tanks.update(self.walls)
             self.bullets.update(self.player_tanks, self.enemy_tanks)
             self.view.draw_game(self.screen, self.bgd, self.sprites)
