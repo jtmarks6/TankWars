@@ -36,6 +36,7 @@ class TankWarsController():
         self.screen = pygame.display.set_mode(size)
         self.screen.fill(SURFACE_COLOR)
         pygame.display.set_caption("Tank Wars")
+        self.bgd = self.screen
 
     def generate_walls(self, board: list[list[bool]], walls: pygame.sprite.Group):
         for j in range(len(board[0])):
@@ -63,16 +64,30 @@ class TankWarsController():
                 if board[i][j] == WALL:
                     walls.add(self.model.Wall(j * BITS, i * BITS))
 
+    def generate_new_level(self):
+        # Clear previous level
+        row = [EMPTY] * BOARD_WIDTH
+        for i in range(BOARD_HEIGHT):
+            self.board[i] = row.copy()
+
+        self.walls.empty()
+        self.player_tanks.empty()
+        self.enemy_tanks.empty()
+        self.bullets.empty()
+
+        self.screen.fill(SURFACE_COLOR)
+        self.bgd = self.screen.copy()
+        self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
+        for _ in range(random.randint(1, 6)): # TODO fix could spawn on top of each other
+            self.enemy_tanks.add(self.model.Enemy_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
+        self.generate_walls(self.board, self.walls)
+
+
     def start(self):
         # gen walls each round
         # set new bgd with walls
         # create new player tank and enemy tanks
         # loop until level is done
-
-        bgd = self.screen.copy()
-        self.walls.draw(self.screen)
-        self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH) * BITS, random.randrange(1, BOARD_HEIGHT) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
-        self.generate_walls(self.board, self.walls)
 
         exit = True
         clock = pygame.time.Clock()
@@ -82,12 +97,15 @@ class TankWarsController():
                 if event.type == pygame.QUIT:
                     exit = False
 
+            if len(self.enemy_tanks.sprites()) == 0:
+                self.generate_new_level()
+
             mouse_pressed = pygame.mouse.get_pressed()
             keys = pygame.key.get_pressed()
 
             self.player_tanks.update(keys, mouse_pressed, self.walls)
             self.bullets.update(self.player_tanks, self.enemy_tanks)
-            self.view.draw_game(self.screen, bgd, self.sprites)
+            self.view.draw_game(self.screen, self.bgd, self.sprites)
             clock.tick(FPS)
 
         pygame.quit()
