@@ -6,7 +6,8 @@ SURFACE_COLOR = (233, 204, 149)
 
 SCREEN_WIDTH = 736
 SCREEN_HEIGHT = 544
-TANK_SPEED = 4
+TANK_SPEED = 3
+ENEMY_TANK_SPEED = 2
 BOARD_WIDTH = 23
 BOARD_HEIGHT = 17
 BULLET_SPEED = 8
@@ -85,7 +86,7 @@ class TankWarsController():
                 enemy_x = random.randrange(1, BOARD_WIDTH - 1)
                 enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
 
-            self.enemy_tanks.add(self.model.Enemy_Tank(enemy_x * BITS, enemy_y * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
+            self.enemy_tanks.add(self.model.Enemy_Tank(enemy_x * BITS, enemy_y * BITS, ENEMY_TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
 
         self.generate_walls(self.board, self.walls)
 
@@ -107,7 +108,7 @@ class TankWarsController():
             self.player_tanks.update(keys, mouse_pressed, self.walls, self.enemy_tanks)
             for tank in self.player_tanks:
                 self.player_board_pos = tank.get_pos()
-            self.enemy_tanks.update(self.walls, self.player_board_pos)
+            self.enemy_tanks.update(self.player_board_pos)
             self.bullets.update(self.player_tanks, self.enemy_tanks)
             self.view.draw_game(self.screen, self.bgd, self.sprites)
             clock.tick(FPS)
