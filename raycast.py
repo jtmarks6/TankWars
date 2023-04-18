@@ -30,7 +30,10 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
     right = True if movement_vector.x < 0 else False
     top = True if movement_vector.y > 0 else False
     bottom = True if movement_vector.y < 0 else False
-    slope = movement_vector.y / movement_vector.x if movement_vector.x != 0 else movement_vector.y
+    if movement_vector.x == 0:  # vertical movement
+        slope = float('inf')
+    else:
+        slope = movement_vector.y / movement_vector.x
     closest_collision = None
     min_distance = float('inf')
 
@@ -43,7 +46,7 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
         # Left side check
         if left and left_side >= start_pos.left and left_side <= end_pos.right:
             start_point = start_pos.topright
-            b = start_point[1] - slope * start_point[0]
+            b = start_point[1] - slope * start_point[0] if slope != float('inf') else start_point[1]
             collision = intersection_point(slope, b, float('inf'), left_side)
             if collision.y > bottom_side or collision.y < top_side:
                 collision = None
@@ -57,6 +60,13 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
 
             if not collision:
                 start_point = start_pos.bottomright
+                b = start_point[1] - slope * start_point[0]
+                collision = intersection_point(slope, b, float('inf'), left_side)
+                if collision.y > bottom_side or collision.y < top_side:
+                    collision = None
+
+            if not collision:
+                start_point = start_pos.bottomleft
                 b = start_point[1] - slope * start_point[0]
                 collision = intersection_point(slope, b, float('inf'), left_side)
                 if collision.y > bottom_side or collision.y < top_side:
@@ -90,6 +100,13 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
                 if collision.y > bottom_side or collision.y < top_side:
                     collision = None
 
+            if not collision:
+                start_point = start_pos.bottomright
+                b = start_point[1] - slope * start_point[0]
+                collision = intersection_point(slope, b, float('inf'), right_side)
+                if collision.y > bottom_side or collision.y < top_side:
+                    collision = None
+
             if collision:
                 distance = math.sqrt((collision.x - start_point[0])**2 + (collision.y - start_point[1])**2)
                 if distance < min_distance:
@@ -118,6 +135,13 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
                 if collision.x < left_side or collision.x > right_side:
                     collision = None
 
+            if not collision:
+                start_point = start_pos.topright
+                b = start_point[1] - slope * start_point[0]
+                collision = intersection_point(slope, b, 0, top_side)
+                if collision.x < left_side or collision.x > right_side:
+                    collision = None
+
             if collision:
                 distance = math.sqrt((collision.x - start_point[0])**2 + (collision.y - start_point[1])**2)
                 if distance < min_distance:
@@ -141,6 +165,13 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
 
             if not collision:
                 start_point = start_pos.topleft
+                b = start_point[1] - slope * start_point[0]
+                collision = intersection_point(slope, b, 0, bottom_side)
+                if collision.x < left_side or collision.x > right_side:
+                    collision = None
+
+            if not collision:
+                start_point = start_pos.topright
                 b = start_point[1] - slope * start_point[0]
                 collision = intersection_point(slope, b, 0, bottom_side)
                 if collision.x < left_side or collision.x > right_side:

@@ -105,7 +105,7 @@ class TankWarsController():
             mouse_pressed = pygame.mouse.get_pressed()
             keys = pygame.key.get_pressed()
 
-            self.player_tanks.update(keys, mouse_pressed, self.walls, self.enemy_tanks)
+            self.player_tanks.update(keys, mouse_pressed, self.walls, self.enemy_tanks, self.screen)
             for tank in self.player_tanks:
                 self.player_board_pos = tank.get_pos()
             self.enemy_tanks.update(self.player_board_pos)

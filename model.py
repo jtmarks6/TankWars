@@ -37,7 +37,7 @@ class Player_Tank(pygame.sprite.Sprite):
         self.rect.y = y
         self.board[y // BITS][x // BITS] = TANK
 
-    def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group, enemy_tanks: pygame.sprite.Group):
+    def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group, enemy_tanks: pygame.sprite.Group, screen):
         if mouse_pressed[0]: # TODO use https://www.reddit.com/r/gamedev/comments/lovizf/angle_between_player_and_target_in_degrees/ to animate
             if not self.debounce and len(self.shot_bullets.sprites()) < self.max_bullets:
                 bullet = Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), self.bullet_speed, walls)
@@ -61,37 +61,56 @@ class Player_Tank(pygame.sprite.Sprite):
             elif keys[pygame.K_d]:
                 dx = self.speed
 
-        if dx or dy:
+        if dy or dx:
             direction = math.atan2(dy, dx)
             angle = math.degrees(-direction) - 90
             old_center = self.rect.center
             self.image = pygame.transform.rotate(self.original_image, angle)
             self.rect = self.image.get_rect(center=old_center)
-
-            movement_vector = pygame.math.Vector2(dx, dy) # TODO subtract to account for rotation movement
+        
+        if dx:
+            movement_vector = pygame.math.Vector2(dx, 0)
             movement_vector.normalize_ip()
             movement_vector *= self.speed
             next_position = self.rect.move(movement_vector)
 
             collision = raycast(self.rect, next_position, movement_vector, walls)
             if collision:
-                movement_vector = pygame.math.Vector2(dx, dy)
+                pygame.draw.circle(screen, (0,0,255), collision.point, 2)
+                movement_vector = pygame.math.Vector2(dx, 0)
                 movement_vector.normalize_ip()
-                movement_vector *= collision.distance
+                movement_vector *= int(collision.distance)
+                next_position = self.rect.move(movement_vector)
+            
+            self.rect = next_position
+                
+        if dy: # left corner doesn't line up when going down
+            movement_vector = pygame.math.Vector2(0, dy)
+            movement_vector.normalize_ip()
+            movement_vector *= self.speed
+            next_position = self.rect.move(movement_vector)
+
+            collision = raycast(self.rect, next_position, movement_vector, walls)
+            if collision:
+                pygame.draw.circle(screen, (0,0,255), collision.point, 2)
+                movement_vector = pygame.math.Vector2(0, dy)
+                movement_vector.normalize_ip()
+                movement_vector *= int(collision.distance)
                 next_position = self.rect.move(movement_vector)
 
             self.rect = next_position
 
+        if dx or dy:
             x_index = self.rect.x // BITS
             y_index = self.rect.y // BITS
             if (x_index, y_index) != self.last_board_pos:
                 self.board[self.last_board_pos[1]][self.last_board_pos[0]] = EMPTY
                 self.board[y_index][x_index] = TANK
                 self.last_board_pos = (x_index, y_index)
-                # if self.board[y_index][x_index] == 1 or pygame.sprite.spritecollideany(self, walls):
-                #     for row in self.board:
-                #         print(row)
-                #     print("")
+                if self.board[y_index][x_index] == 1 or pygame.sprite.spritecollideany(self, walls):
+                    for row in self.board:
+                        print(row)
+                    print("")
     
     def get_pos(self) -> tuple:
         return self.last_board_pos
