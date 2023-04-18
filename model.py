@@ -61,12 +61,12 @@ class Player_Tank(pygame.sprite.Sprite):
             elif keys[pygame.K_d]:
                 dx = self.speed
 
-        if dy or dx:
-            direction = math.atan2(dy, dx)
-            angle = math.degrees(-direction) - 90
-            old_center = self.rect.center
-            self.image = pygame.transform.rotate(self.original_image, angle)
-            self.rect = self.image.get_rect(center=old_center)
+        # if dy or dx:
+        #     direction = math.atan2(dy, dx)
+        #     angle = math.degrees(-direction) - 90
+        #     old_center = self.rect.center
+        #     self.image = pygame.transform.rotate(self.original_image, angle)
+        #     self.rect = self.image.get_rect(center=old_center)
         
         if dx:
             movement_vector = pygame.math.Vector2(dx, 0)
