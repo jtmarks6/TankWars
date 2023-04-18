@@ -26,7 +26,7 @@ class TankWarsController():
         self.walls = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
         self.sprites = [self.player_tanks, self.enemy_tanks, self.walls, self.bullets]
-        self.player_board_pos = ()
+        self.player_pos = ()
 
         # Create 2d array for board
         row = [EMPTY] * BOARD_WIDTH
@@ -99,7 +99,7 @@ class TankWarsController():
                 if event.type == pygame.QUIT:
                     exit = False
 
-            if len(self.enemy_tanks.sprites()) == 0:
+            if len(self.enemy_tanks.sprites()) == 0 or len(self.player_tanks.sprites()) == 0:
                 self.generate_new_level()
 
             mouse_pressed = pygame.mouse.get_pressed()
@@ -107,8 +107,8 @@ class TankWarsController():
 
             self.player_tanks.update(keys, mouse_pressed, self.walls, self.enemy_tanks, self.screen)
             for tank in self.player_tanks:
-                self.player_board_pos = tank.get_pos()
-            self.enemy_tanks.update(self.player_board_pos)
+                self.player_pos = tank.get_pos()
+            self.enemy_tanks.update(self.player_pos, self.walls, self.screen)
             self.bullets.update(self.player_tanks, self.enemy_tanks)
             self.view.draw_game(self.screen, self.bgd, self.sprites)
             clock.tick(FPS)

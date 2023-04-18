@@ -40,7 +40,11 @@ class Player_Tank(pygame.sprite.Sprite):
     def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group, enemy_tanks: pygame.sprite.Group, screen):
         if mouse_pressed[0]: # TODO use https://www.reddit.com/r/gamedev/comments/lovizf/angle_between_player_and_target_in_degrees/ to animate
             if not self.debounce and len(self.shot_bullets.sprites()) < self.max_bullets:
-                bullet = Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), self.bullet_speed, walls)
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                x = self.rect.x + (BITS / 2)
+                y = self.rect.y + (BITS / 2)
+                movement_vector = pygame.math.Vector2(mouse_x - x, mouse_y - y)
+                bullet = Bullet(x, y, movement_vector, self.bullet_speed, walls, self)
                 self.shot_bullets.add(bullet)
                 self.bullets.add(bullet)
                 self.debounce = True
@@ -55,7 +59,7 @@ class Player_Tank(pygame.sprite.Sprite):
             elif keys[pygame.K_s]:
                 dy = self.speed
 
-        if keys[pygame.K_a] ^ keys[pygame.K_d]:
+        elif keys[pygame.K_a] ^ keys[pygame.K_d]:
             if keys[pygame.K_a]:
                 dx = -self.speed
             elif keys[pygame.K_d]:
@@ -79,12 +83,11 @@ class Player_Tank(pygame.sprite.Sprite):
 
             collision = raycast(self.rect, next_position, movement_vector, walls)
             if collision:
-                if (collision.point[1] != collision.sprite.rect.top and collision.point[1] != collision.sprite.rect.bottom) or self.rect.centery // 32 == collision.sprite.rect.centery // 32:
-                    pygame.draw.circle(screen, (0,0,255), collision.point, 2)
-                    movement_vector = pygame.math.Vector2(dx, 0)
-                    movement_vector.normalize_ip()
-                    movement_vector *= int(collision.distance)
-                    next_position = self.rect.move(movement_vector)
+                pygame.draw.circle(screen, (0,0,255), collision.point, 2)
+                movement_vector = pygame.math.Vector2(dx, 0)
+                movement_vector.normalize_ip()
+                movement_vector *= int(collision.distance)
+                next_position = self.rect.move(movement_vector)
             
             self.rect = next_position
                 
@@ -96,12 +99,11 @@ class Player_Tank(pygame.sprite.Sprite):
 
             collision = raycast(self.rect, next_position, movement_vector, walls)
             if collision:
-                if (collision.point[0] != collision.sprite.rect.left and collision.point[0] != collision.sprite.rect.right) or self.rect.centerx // 32 == collision.sprite.rect.centerx // 32:
-                    pygame.draw.circle(screen, (0,0,255), collision.point, 2)
-                    movement_vector = pygame.math.Vector2(0, dy)
-                    movement_vector.normalize_ip()
-                    movement_vector *= int(collision.distance)
-                    next_position = self.rect.move(movement_vector)
+                pygame.draw.circle(screen, (0,0,255), collision.point, 2)
+                movement_vector = pygame.math.Vector2(0, dy)
+                movement_vector.normalize_ip()
+                movement_vector *= int(collision.distance)
+                next_position = self.rect.move(movement_vector)
 
             self.rect = next_position
 
@@ -118,7 +120,7 @@ class Player_Tank(pygame.sprite.Sprite):
                     print("")
     
     def get_pos(self) -> tuple:
-        return self.last_board_pos
+        return self.rect
 
 class Enemy_Tank(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
@@ -138,20 +140,23 @@ class Enemy_Tank(pygame.sprite.Sprite):
         self.angle = 0
         self.path = []
         self.path_index = 0
-        self.last_player_pos = ()
+        self.last_player_board_pos = ()
+        self.cooldown = 0
 
         self.rect.x = x
         self.rect.y = y
         self.board[y // BITS][x // BITS] = TANK
 
-    def update(self, player_pos: tuple):
+    def update(self, player_pos: tuple, walls: pygame.sprite.Group, screen):
+        player_board_pos = (player_pos[0] // 32, player_pos[1] // 32)
+
         def find_path():
             start_pos = (self.rect.x // BITS, self.rect.y // BITS)
             adjacent_cells = {
-                (player_pos[0] + 1, player_pos[1]),
-                (player_pos[0] - 1, player_pos[1]),
-                (player_pos[0], player_pos[1] + 1),
-                (player_pos[0], player_pos[1] - 1),
+                (player_board_pos[0] + 1, player_board_pos[1]),
+                (player_board_pos[0] - 1, player_board_pos[1]),
+                (player_board_pos[0], player_board_pos[1] + 1),
+                (player_board_pos[0], player_board_pos[1] - 1),
             }
             goal = adjacent_cells.pop()
             # for row in self.board:
@@ -166,7 +171,7 @@ class Enemy_Tank(pygame.sprite.Sprite):
             if goal:
                 self.path = path_finding.a_star(self.board, start_pos, goal)
                 self.path_index = 0
-                self.last_player_pos = player_pos
+                self.last_player_board_pos = player_board_pos
                 # print(player_pos, self.path)
 
         if self.path and self.path_index < len(self.path):
@@ -193,8 +198,9 @@ class Enemy_Tank(pygame.sprite.Sprite):
                 self.rect.x = target_x
                 self.rect.y = target_y
                 self.path_index += 1
-                if player_pos != self.last_player_pos:
+                if player_board_pos != self.last_player_board_pos:
                     find_path()
+
 
                 x_index = self.rect.x // BITS
                 y_index = self.rect.y // BITS
@@ -205,21 +211,41 @@ class Enemy_Tank(pygame.sprite.Sprite):
         else:
             find_path() # TODO if tank is not visible
 
+        enemy_tank_center = self.rect.center
+        ray_to_player_x = player_pos[0] - enemy_tank_center[0]
+        ray_to_player_y = player_pos[1] - enemy_tank_center[1]
+
+        movement_vector =pygame.math.Vector2(ray_to_player_x, ray_to_player_y)
+        print(movement_vector)
+        next_position = self.rect.move(movement_vector)
+        collision = raycast(self.rect, next_position, movement_vector, walls)
+        if collision:
+            pygame.draw.circle(screen, (255,0,0), collision.point, 2)
+
+        if not collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
+            bullet = Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), movement_vector, self.bullet_speed, walls, self)
+            self.shot_bullets.add(bullet)
+            self.bullets.add(bullet)
+            self.cooldown = 120
+        else:
+            if self.cooldown > 0:
+                self.cooldown -= 1
+
     def kill(self):
         pygame.sprite.Sprite.kill(self)
         self.board[self.last_board_pos[1]][self.last_board_pos[0]] = EMPTY
 
 class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
-    def __init__(self, x: int, y: int, speed: int, walls: pygame.sprite.Group):
+    def __init__(self, x: int, y: int, movement_vector: pygame.math.Vector2, speed: int, walls: pygame.sprite.Group, parent: pygame.sprite):
         super().__init__()
 
         self.image = pygame.image.load('assets/bullet.png')
         self.speed = speed
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        self.movement_vector = pygame.math.Vector2(mouse_x - x, mouse_y - y)
+        self.movement_vector = movement_vector
         self.bounces = 0
         self.walls = walls
         self.rect = self.image.get_rect()
+        self.parent = parent
 
         self.rect.x = x
         self.rect.y = y
@@ -230,8 +256,13 @@ class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
         movement_vector *= self.speed
         next_position = self.rect.move(movement_vector)
 
+        collision = raycast(self.rect, next_position, movement_vector, player_tanks)
+        if collision and collision.sprite != self.parent:
+            collision.sprite.kill()
+            self.kill()
+
         collision = raycast(self.rect, next_position, movement_vector, enemy_tanks)
-        if collision:
+        if collision and collision.sprite != self.parent:
             collision.sprite.kill()
             self.kill()
 
