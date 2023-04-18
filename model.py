@@ -61,12 +61,15 @@ class Player_Tank(pygame.sprite.Sprite):
             elif keys[pygame.K_d]:
                 dx = self.speed
 
-        # if dy or dx:
-        #     direction = math.atan2(dy, dx)
-        #     angle = math.degrees(-direction) - 90
-        #     old_center = self.rect.center
-        #     self.image = pygame.transform.rotate(self.original_image, angle)
-        #     self.rect = self.image.get_rect(center=old_center)
+        if dy or dx:
+            direction = math.atan2(dy, dx)
+            angle = math.degrees(-direction) - 90
+            old_center = self.rect.center
+            self.image = pygame.transform.rotate(self.original_image, angle)
+            self.rect = self.image.get_rect(center=old_center)
+            new_center = self.rect.center
+            dx += old_center[0] - new_center[0]
+            dy += old_center[1] - new_center[1]
         
         if dx:
             movement_vector = pygame.math.Vector2(dx, 0)
@@ -76,11 +79,12 @@ class Player_Tank(pygame.sprite.Sprite):
 
             collision = raycast(self.rect, next_position, movement_vector, walls)
             if collision:
-                pygame.draw.circle(screen, (0,0,255), collision.point, 2)
-                movement_vector = pygame.math.Vector2(dx, 0)
-                movement_vector.normalize_ip()
-                movement_vector *= int(collision.distance)
-                next_position = self.rect.move(movement_vector)
+                if (collision.point[1] != collision.sprite.rect.top and collision.point[1] != collision.sprite.rect.bottom) or self.rect.centery // 32 == collision.sprite.rect.centery // 32:
+                    pygame.draw.circle(screen, (0,0,255), collision.point, 2)
+                    movement_vector = pygame.math.Vector2(dx, 0)
+                    movement_vector.normalize_ip()
+                    movement_vector *= int(collision.distance)
+                    next_position = self.rect.move(movement_vector)
             
             self.rect = next_position
                 
@@ -92,11 +96,12 @@ class Player_Tank(pygame.sprite.Sprite):
 
             collision = raycast(self.rect, next_position, movement_vector, walls)
             if collision:
-                pygame.draw.circle(screen, (0,0,255), collision.point, 2)
-                movement_vector = pygame.math.Vector2(0, dy)
-                movement_vector.normalize_ip()
-                movement_vector *= int(collision.distance)
-                next_position = self.rect.move(movement_vector)
+                if (collision.point[0] != collision.sprite.rect.left and collision.point[0] != collision.sprite.rect.right) or self.rect.centerx // 32 == collision.sprite.rect.centerx // 32:
+                    pygame.draw.circle(screen, (0,0,255), collision.point, 2)
+                    movement_vector = pygame.math.Vector2(0, dy)
+                    movement_vector.normalize_ip()
+                    movement_vector *= int(collision.distance)
+                    next_position = self.rect.move(movement_vector)
 
             self.rect = next_position
 

@@ -41,7 +41,7 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
         bottom_side = sprite.rect.bottom
 
         # Left side check
-        if left and left_side >= start_pos.left and left_side <= end_pos.right:
+        if left and left_side >= start_pos.left and left_side <= end_pos.right: # TODO check distance is within movement
             collisions = []
             def check_right(start_point) -> Optional[Collision]:
                 b = start_point[1] - slope * start_point[0]
