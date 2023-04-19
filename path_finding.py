@@ -52,7 +52,7 @@ def a_star(grid, start, goal):
             x, y = current_node.x + x_offset, current_node.y + y_offset
             if x < 0 or y < 0 or x >= len(grid[0]) or y >= len(grid):
                 continue
-            if grid[y][x] == 0:
+            if grid[y][x].status == 0:
                 # Compute the cost of moving to the neighbor
                 neighbor_cost = current_node.cost + 1
                 neighbor = Node(x, y, neighbor_cost, current_node)

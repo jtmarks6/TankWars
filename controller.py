@@ -1,6 +1,6 @@
 import pygame
 import random
-from model import (EMPTY, WALL, TANK, BOMB, BITS)
+from model import (EMPTY, WALL, TANK, BOMB, BITS, BoardCell)
 
 SURFACE_COLOR = (233, 204, 149)
 
@@ -25,11 +25,12 @@ class TankWarsController():
         self.enemy_tanks = pygame.sprite.Group()
         self.walls = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
-        self.sprites = [self.player_tanks, self.enemy_tanks, self.walls, self.bullets]
+        self.bombs = pygame.sprite.Group()
+        self.sprites = [self.enemy_tanks, self.walls, self.bullets, self.bombs, self.player_tanks]
         self.player_pos = ()
 
         # Create 2d array for board
-        row = [EMPTY] * BOARD_WIDTH
+        row = [BoardCell(EMPTY, None)] * BOARD_WIDTH
         self.board = []
         for _ in range(BOARD_HEIGHT):
             self.board.append(row.copy())
@@ -40,33 +41,38 @@ class TankWarsController():
         pygame.display.set_caption("Tank Wars")
         self.bgd = self.screen
 
-    def generate_walls(self, board: list[list[bool]], walls: pygame.sprite.Group):
+    def generate_walls(self, board: list[list[BoardCell]], walls: pygame.sprite.Group):
         for j in range(len(board[0])):
-            board[0][j] = WALL
+            wall = self.model.Wall(j * BITS, 0 * BITS)
+            board[0][j] = BoardCell(WALL, wall)
+            walls.add(wall)
 
         for j in range(len(board[0])):
-            board[-1][j] = WALL
+            wall = self.model.Wall(j * BITS, (len(board) - 1) * BITS)
+            board[-1][j] = BoardCell(WALL, wall)
+            walls.add(wall)
 
         for i in range(len(board)):
-            board[i][0] = WALL
+            wall = self.model.Wall(0 * BITS, i * BITS)
+            board[i][0] = BoardCell(WALL, wall)
+            walls.add(wall)
 
         for i in range(len(board)):
-            board[i][-1] = WALL
+            wall = self.model.Wall((len(board[0]) - 1) * BITS, i * BITS)
+            board[i][-1] = BoardCell(WALL, wall)
+            walls.add(wall)
 
         for i in range(len(board)):
             for j in range(len(board[0])):
-                if random.random() > .9 and board[i][j] == EMPTY:
-                    board[i][j] = WALL
+                if random.random() > .9 and board[i][j].status == EMPTY:
+                    wall = self.model.Wall(j * BITS, i * BITS)
+                    board[i][j] = BoardCell(WALL, wall)
+                    walls.add(wall)
 
         # TODO combine close walls and connect some random ones
 
-        for i in range(len(board)):
-            for j in range(len(board[0])):
-                if board[i][j] == WALL:
-                    walls.add(self.model.Wall(j * BITS, i * BITS))
-
     def generate_new_level(self):
-        row = [EMPTY] * BOARD_WIDTH
+        row = [BoardCell(EMPTY, None)] * BOARD_WIDTH
         for i in range(BOARD_HEIGHT):
             self.board[i] = row.copy()
 
@@ -74,15 +80,16 @@ class TankWarsController():
         self.player_tanks.empty()
         self.enemy_tanks.empty()
         self.bullets.empty()
+        self.bombs.empty()
 
         self.screen.fill(SURFACE_COLOR)
         self.bgd = self.screen.copy()
 
-        self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
+        self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board, self.bombs))
         for _ in range(random.randint(1,1)): # TODO choose number of tanks range with wave number
             enemy_x = random.randrange(1, BOARD_WIDTH - 1)
             enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
-            while self.board[enemy_y][enemy_x] != EMPTY:
+            while self.board[enemy_y][enemy_x].status != EMPTY:
                 enemy_x = random.randrange(1, BOARD_WIDTH - 1)
                 enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
 
@@ -110,6 +117,7 @@ class TankWarsController():
                 self.player_pos = tank.get_pos()
             self.enemy_tanks.update(self.player_pos, self.walls, self.screen)
             self.bullets.update(self.player_tanks, self.enemy_tanks)
+            self.bombs.update()
             self.view.draw_game(self.screen, self.bgd, self.sprites)
             clock.tick(FPS)
 

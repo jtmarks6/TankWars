@@ -3,6 +3,8 @@ import path_finding
 import math
 from raycast import *
 
+BoardCell = namedtuple('BoardCell', ['status', 'sprite'])
+
 BITS = 32
 
 EMPTY = 0
@@ -16,7 +18,7 @@ LEFT_ANGLE = 90
 DOWN_ANGLE = 180
 
 class Player_Tank(pygame.sprite.Sprite):
-    def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
+    def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[BoardCell]], bombs: pygame.sprite.Group):
         super().__init__()
 
         self.original_image = pygame.image.load('assets/tank.png').convert_alpha()
@@ -32,10 +34,12 @@ class Player_Tank(pygame.sprite.Sprite):
         self.board = board
         self.last_board_pos = (x // BITS, y // BITS)
         self.angle = 0
+        self.bombs = bombs
+        self.dropped_bombs = pygame.sprite.Group()
 
         self.rect.x = x
         self.rect.y = y
-        self.board[y // BITS][x // BITS] = TANK
+        self.board[y // BITS][x // BITS] = BoardCell(TANK, self)
 
     def update(self, keys: list[bool], mouse_pressed: list[bool], walls: pygame.sprite.Group, enemy_tanks: pygame.sprite.Group, screen):
         if mouse_pressed[0]: # TODO use https://www.reddit.com/r/gamedev/comments/lovizf/angle_between_player_and_target_in_degrees/ to animate
@@ -50,6 +54,11 @@ class Player_Tank(pygame.sprite.Sprite):
                 self.debounce = True
         else:
             self.debounce = False
+        
+        if keys[pygame.K_SPACE] and len(self.dropped_bombs) == 0:
+            bomb = Bomb(self.rect.centerx, self.rect.centery, 120, self.board)
+            self.bombs.add(bomb)
+            self.dropped_bombs.add(bomb)
 
         dx = 0
         dy = 0
@@ -64,6 +73,7 @@ class Player_Tank(pygame.sprite.Sprite):
                 dx = -self.speed
             elif keys[pygame.K_d]:
                 dx = self.speed
+
 
         if dy or dx:
             direction = math.atan2(dy, dx)
@@ -111,10 +121,10 @@ class Player_Tank(pygame.sprite.Sprite):
             x_index = self.rect.x // BITS
             y_index = self.rect.y // BITS
             if (x_index, y_index) != self.last_board_pos:
-                self.board[self.last_board_pos[1]][self.last_board_pos[0]] = EMPTY
-                self.board[y_index][x_index] = TANK
+                self.board[self.last_board_pos[1]][self.last_board_pos[0]] = BoardCell(EMPTY, None)
+                self.board[y_index][x_index] = BoardCell(TANK, self)
                 self.last_board_pos = (x_index, y_index)
-                if self.board[y_index][x_index] == 1 or pygame.sprite.spritecollideany(self, walls):
+                if self.board[y_index][x_index].status == 1 or pygame.sprite.spritecollideany(self, walls):
                     for row in self.board:
                         print(row)
                     print("")
@@ -123,7 +133,7 @@ class Player_Tank(pygame.sprite.Sprite):
         return self.rect
 
 class Enemy_Tank(pygame.sprite.Sprite):
-    def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[int]]):
+    def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[BoardCell]]):
         super().__init__()
 
         self.original_image = pygame.image.load('assets/enemy_tank.png')
@@ -145,7 +155,7 @@ class Enemy_Tank(pygame.sprite.Sprite):
 
         self.rect.x = x
         self.rect.y = y
-        self.board[y // BITS][x // BITS] = TANK
+        self.board[y // BITS][x // BITS] = BoardCell(TANK, self)
 
     def update(self, player_pos: tuple, walls: pygame.sprite.Group, screen):
         player_board_pos = (player_pos[0] // 32, player_pos[1] // 32)
@@ -162,7 +172,7 @@ class Enemy_Tank(pygame.sprite.Sprite):
             # for row in self.board:
             #     print(row)
             # print("")
-            while self.board[goal[1]][goal[0]] != 0:
+            while self.board[goal[1]][goal[0]].status != 0:
                 if not adjacent_cells:
                     return
                 
@@ -205,8 +215,8 @@ class Enemy_Tank(pygame.sprite.Sprite):
                 x_index = self.rect.x // BITS
                 y_index = self.rect.y // BITS
                 if (x_index, y_index) != self.last_board_pos:
-                    self.board[self.last_board_pos[1]][self.last_board_pos[0]] = EMPTY
-                    self.board[y_index][x_index] = TANK
+                    self.board[self.last_board_pos[1]][self.last_board_pos[0]] = BoardCell(EMPTY, None)
+                    self.board[y_index][x_index] = BoardCell(TANK, self)
                     self.last_board_pos = (x_index, y_index)
         else:
             find_path() # TODO if tank is not visible
@@ -216,24 +226,26 @@ class Enemy_Tank(pygame.sprite.Sprite):
         ray_to_player_y = player_pos[1] - enemy_tank_center[1]
 
         movement_vector =pygame.math.Vector2(ray_to_player_x, ray_to_player_y)
-        print(movement_vector)
         next_position = self.rect.move(movement_vector)
         collision = raycast(self.rect, next_position, movement_vector, walls)
         if collision:
             pygame.draw.circle(screen, (255,0,0), collision.point, 2)
+            dist = math.sqrt((ray_to_player_x)**2 + (ray_to_player_y)**2)
+            if dist < collision.distance:
+                print(int(collision.distance), int(dist))
 
-        if not collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
-            bullet = Bullet(self.rect.x + (BITS / 2), self.rect.y + (BITS / 2), movement_vector, self.bullet_speed, walls, self)
-            self.shot_bullets.add(bullet)
-            self.bullets.add(bullet)
-            self.cooldown = 120
-        else:
-            if self.cooldown > 0:
-                self.cooldown -= 1
+        # if not collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
+        #     bullet = Bullet(self.rect.centerx, self.rect.centery, movement_vector, self.bullet_speed, walls, self)
+        #     self.shot_bullets.add(bullet)
+        #     self.bullets.add(bullet)
+        #     self.cooldown = 120
+        # else:
+        #     if self.cooldown > 0:
+        #         self.cooldown -= 1
 
     def kill(self):
         pygame.sprite.Sprite.kill(self)
-        self.board[self.last_board_pos[1]][self.last_board_pos[0]] = EMPTY
+        self.board[self.last_board_pos[1]][self.last_board_pos[0]] = BoardCell(EMPTY, None)
 
 class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
     def __init__(self, x: int, y: int, movement_vector: pygame.math.Vector2, speed: int, walls: pygame.sprite.Group, parent: pygame.sprite):
@@ -289,7 +301,63 @@ class Wall(pygame.sprite.Sprite):
         super().__init__()
 
         self.image = pygame.image.load('assets/wall.png')
-
         self.rect = self.image.get_rect()
+
         self.rect.x = x
         self.rect.y = y
+
+class Bomb(pygame.sprite.Sprite):
+    def __init__(self, x: int, y: int, fuse_time: int, board: list[list[BoardCell]]):
+        super().__init__()
+
+        self.image = pygame.image.load('assets/bomb.png')
+        self.fuse = fuse_time
+        self.rect = self.image.get_rect()
+        self.board = board
+        self.x = x // BITS
+        self.y = y // BITS
+
+        self.rect.x = self.x * BITS
+        self.rect.y = self.y * BITS
+        board[self.y][self.x] = BoardCell(BOMB, self)
+
+    def update(self):
+        if self.fuse == 0:
+            if self.x + 1 < len(self.board[0]) - 1:
+                if self.board[self.y][self.x + 1].status == WALL:
+                    self.board[self.y][self.x + 1].sprite.kill()
+                    self.board[self.y][self.x + 1] = BoardCell(EMPTY, None)
+
+                if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x + 1].status == WALL:
+                    self.board[self.y + 1][self.x + 1].sprite.kill()
+                    self.board[self.y + 1][self.x + 1] = BoardCell(EMPTY, None)
+
+                if self.y - 1 > 1 and self.board[self.y - 1][self.x + 1].status == WALL:
+                    self.board[self.y - 1][self.x + 1].sprite.kill()
+                    self.board[self.y - 1][self.x + 1] = BoardCell(EMPTY, None)
+
+            if self.x - 1 > 1:
+                if self.board[self.y][self.x - 1].status == WALL:
+                    self.board[self.y][self.x - 1].sprite.kill()
+                    self.board[self.y][self.x - 1] = BoardCell(EMPTY, None)
+
+                if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x - 1].status == WALL:
+                    self.board[self.y + 1][self.x - 1].sprite.kill()
+                    self.board[self.y + 1][self.x - 1] = BoardCell(EMPTY, None)
+
+                if self.y - 1 > 1 and self.board[self.y - 1][self.x - 1].status == WALL:
+                    self.board[self.y - 1][self.x - 1].sprite.kill()
+                    self.board[self.y - 1][self.x - 1] = BoardCell(EMPTY, None)
+
+            if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x].status == WALL:
+                self.board[self.y + 1][self.x].sprite.kill()
+                self.board[self.y + 1][self.x] = BoardCell(EMPTY, None)
+
+            if self.y - 1 > 1 and self.board[self.y - 1][self.x].status == WALL:
+                self.board[self.y - 1][self.x].sprite.kill()
+                self.board[self.y - 1][self.x] = BoardCell(EMPTY, None)
+                
+            self.kill()
+            self.board[self.y][self.x] = BoardCell(EMPTY, None)
+        else:
+            self.fuse -= 1
