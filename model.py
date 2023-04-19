@@ -93,7 +93,7 @@ class Player_Tank(pygame.sprite.Sprite):
 
             collision = raycast(self.rect, next_position, movement_vector, walls)
             if collision:
-                pygame.draw.circle(screen, (0,0,255), collision.point, 2)
+                # pygame.draw.circle(screen, (0,0,255), collision.point, 2)
                 movement_vector = pygame.math.Vector2(dx, 0)
                 movement_vector.normalize_ip()
                 movement_vector *= int(collision.distance)
@@ -109,7 +109,7 @@ class Player_Tank(pygame.sprite.Sprite):
 
             collision = raycast(self.rect, next_position, movement_vector, walls)
             if collision:
-                pygame.draw.circle(screen, (0,0,255), collision.point, 2)
+                # pygame.draw.circle(screen, (0,0,255), collision.point, 2)
                 movement_vector = pygame.math.Vector2(0, dy)
                 movement_vector.normalize_ip()
                 movement_vector *= int(collision.distance)
@@ -229,19 +229,19 @@ class Enemy_Tank(pygame.sprite.Sprite):
         next_position = self.rect.move(movement_vector)
         collision = raycast(self.rect, next_position, movement_vector, walls)
         if collision:
-            pygame.draw.circle(screen, (255,0,0), collision.point, 2)
+            # pygame.draw.circle(screen, (255,0,0), collision.point, 2)
             dist = math.sqrt((ray_to_player_x)**2 + (ray_to_player_y)**2)
-            if dist < collision.distance:
-                print(int(collision.distance), int(dist))
+            # if dist < collision.distance:
+            #     print(int(collision.distance), int(dist))
 
-        # if not collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
-        #     bullet = Bullet(self.rect.centerx, self.rect.centery, movement_vector, self.bullet_speed, walls, self)
-        #     self.shot_bullets.add(bullet)
-        #     self.bullets.add(bullet)
-        #     self.cooldown = 120
-        # else:
-        #     if self.cooldown > 0:
-        #         self.cooldown -= 1
+        if not collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
+            bullet = Bullet(self.rect.centerx, self.rect.centery, movement_vector, self.bullet_speed, walls, self)
+            self.shot_bullets.add(bullet)
+            self.bullets.add(bullet)
+            self.cooldown = 120
+        else:
+            if self.cooldown > 0:
+                self.cooldown -= 1
 
     def kill(self):
         pygame.sprite.Sprite.kill(self)
