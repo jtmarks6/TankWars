@@ -15,7 +15,6 @@ Tank Wars will be a similar game to the tank game from WiiPlay. The goal is to s
 - Left click will shoot a bullet toward the mouse location
 - Bullets will bounce once off any walls then be removed from the game
 - Walls are randomly placed upon starting the game
-- Code is all in main currently because I am learning pygame and keep changing plans so often I didn't want to separate it out until I understand my final archetecture well.
 
 ![Game Preview](assets/current_progress.png)
 
