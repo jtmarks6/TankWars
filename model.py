@@ -324,36 +324,36 @@ class Bomb(pygame.sprite.Sprite):
     def update(self):
         if self.fuse == 0:
             if self.x + 1 < len(self.board[0]) - 1:
-                if self.board[self.y][self.x + 1].status == WALL:
+                if self.board[self.y][self.x + 1].status != EMPTY:
                     self.board[self.y][self.x + 1].sprite.kill()
                     self.board[self.y][self.x + 1] = BoardCell(EMPTY, None)
 
-                if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x + 1].status == WALL:
+                if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x + 1].status != EMPTY:
                     self.board[self.y + 1][self.x + 1].sprite.kill()
                     self.board[self.y + 1][self.x + 1] = BoardCell(EMPTY, None)
 
-                if self.y - 1 > 1 and self.board[self.y - 1][self.x + 1].status == WALL:
+                if self.y - 1 > 1 and self.board[self.y - 1][self.x + 1].status != EMPTY:
                     self.board[self.y - 1][self.x + 1].sprite.kill()
                     self.board[self.y - 1][self.x + 1] = BoardCell(EMPTY, None)
 
             if self.x - 1 > 1:
-                if self.board[self.y][self.x - 1].status == WALL:
+                if self.board[self.y][self.x - 1].status != EMPTY:
                     self.board[self.y][self.x - 1].sprite.kill()
                     self.board[self.y][self.x - 1] = BoardCell(EMPTY, None)
 
-                if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x - 1].status == WALL:
+                if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x - 1].status != EMPTY:
                     self.board[self.y + 1][self.x - 1].sprite.kill()
                     self.board[self.y + 1][self.x - 1] = BoardCell(EMPTY, None)
 
-                if self.y - 1 > 1 and self.board[self.y - 1][self.x - 1].status == WALL:
+                if self.y - 1 > 1 and self.board[self.y - 1][self.x - 1].status != EMPTY:
                     self.board[self.y - 1][self.x - 1].sprite.kill()
                     self.board[self.y - 1][self.x - 1] = BoardCell(EMPTY, None)
 
-            if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x].status == WALL:
+            if self.y + 1 < len(self.board) - 1 and self.board[self.y + 1][self.x].status != EMPTY:
                 self.board[self.y + 1][self.x].sprite.kill()
                 self.board[self.y + 1][self.x] = BoardCell(EMPTY, None)
 
-            if self.y - 1 > 1 and self.board[self.y - 1][self.x].status == WALL:
+            if self.y - 1 > 1 and self.board[self.y - 1][self.x].status != EMPTY:
                 self.board[self.y - 1][self.x].sprite.kill()
                 self.board[self.y - 1][self.x] = BoardCell(EMPTY, None)
                 
