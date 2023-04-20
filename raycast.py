@@ -33,6 +33,7 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
     slope = movement_vector.y / movement_vector.x if movement_vector.x != 0 else float('inf')
     closest_collision = None
     min_distance = float('inf')
+    max_distance = math.sqrt((movement_vector[0])**2 + (movement_vector[1])**2)
 
     for sprite in sprites:
         left_side = sprite.rect.left
@@ -41,14 +42,15 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
         bottom_side = sprite.rect.bottom
 
         # Left side check
-        if left and left_side >= start_pos.left and left_side <= end_pos.right: # TODO check distance is within movement
+        if left and left_side >= start_pos.left and left_side <= end_pos.right:
             collisions = []
             def check_right(start_point) -> Optional[Collision]:
                 b = start_point[1] - slope * start_point[0]
                 collision = intersection_point(slope, b, float('inf'), left_side)
                 if bottom_side >= collision.y and collision.y >= top_side:
                     distance = math.sqrt((collision.x - start_point[0])**2 + (collision.y - start_point[1])**2)
-                    collisions.append(Collision(collision, distance, LEFT_SIDE, sprite))
+                    if distance <= max_distance:
+                        collisions.append(Collision(collision, distance, LEFT_SIDE, sprite))
             
             check_right(start_pos.topright)
             check_right(start_pos.topleft)
@@ -70,7 +72,8 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
                 collision = intersection_point(slope, b, float('inf'), right_side)
                 if bottom_side >= collision.y and collision.y >= top_side:
                     distance = math.sqrt((collision.x - start_point[0])**2 + (collision.y - start_point[1])**2)
-                    collisions.append(Collision(collision, distance, RIGHT_SIDE, sprite))
+                    if distance <= max_distance:
+                        collisions.append(Collision(collision, distance, RIGHT_SIDE, sprite))
             
             check_right(start_pos.topright)
             check_right(start_pos.topleft)
@@ -92,7 +95,8 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
                 collision = intersection_point(slope, b, 0, top_side)
                 if left_side <= collision.x and collision.x <= right_side:
                     distance = math.sqrt((collision.x - start_point[0])**2 + (collision.y - start_point[1])**2)
-                    collisions.append(Collision(collision, distance, TOP_SIDE, sprite))
+                    if distance <= max_distance:
+                        collisions.append(Collision(collision, distance, TOP_SIDE, sprite))
             
             check_top(start_pos.topright)
             check_top(start_pos.topleft)
@@ -109,17 +113,18 @@ def raycast(start_pos: pygame.rect, end_pos: pygame.rect, movement_vector: pygam
         # Bottom side check
         if bottom and bottom_side <= start_pos.bottom and bottom_side >= end_pos.top:
             collisions = []
-            def check_top(start_point) -> Optional[Collision]:
+            def check_bottom(start_point) -> Optional[Collision]:
                 b = start_point[1] - slope * start_point[0] if slope != float('inf') else start_point[0]
                 collision = intersection_point(slope, b, 0, bottom_side)
                 if left_side <= collision.x and collision.x <= right_side:
                     distance = math.sqrt((collision.x - start_point[0])**2 + (collision.y - start_point[1])**2)
-                    collisions.append(Collision(collision, distance, BOTTOM_SIDE, sprite))
+                    if distance <= max_distance:
+                        collisions.append(Collision(collision, distance, BOTTOM_SIDE, sprite))
             
-            check_top(start_pos.topright)
-            check_top(start_pos.topleft)
-            check_top(start_pos.bottomright)
-            check_top(start_pos.bottomleft)
+            check_bottom(start_pos.topright)
+            check_bottom(start_pos.topleft)
+            check_bottom(start_pos.bottomright)
+            check_bottom(start_pos.bottomleft)
 
             if collisions:
                 collisions.sort(key=lambda c: c.distance)

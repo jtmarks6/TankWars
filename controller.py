@@ -1,16 +1,20 @@
 import pygame
 import random
+import path_finding
+
 from model import (EMPTY, WALL, TANK, BOMB, BITS, BoardCell)
 
+MENU_COLOR = (66, 155, 219)
+FONT_COLOR = (12, 21, 56)
 SURFACE_COLOR = (233, 204, 149)
 
 SCREEN_WIDTH = 736
 SCREEN_HEIGHT = 544
-TANK_SPEED = 3
-ENEMY_TANK_SPEED = 2
+TANK_SPEED = 2
+ENEMY_TANK_SPEED = 1
 BOARD_WIDTH = 23
 BOARD_HEIGHT = 17
-BULLET_SPEED = 8
+BULLET_SPEED = 5
 MAX_BULLETS = 2
 
 FPS = 60
@@ -28,6 +32,10 @@ class TankWarsController():
         self.bombs = pygame.sprite.Group()
         self.sprites = [self.enemy_tanks, self.walls, self.bullets, self.bombs, self.player_tanks]
         self.player_pos = ()
+        self.level = 0
+        self.level_duration = 0
+        self.menu = True
+        self.font = pygame.font.Font('freesansbold.ttf', 32)
 
         # Create 2d array for board
         row = [BoardCell(EMPTY, None)] * BOARD_WIDTH
@@ -62,14 +70,27 @@ class TankWarsController():
             board[i][-1] = BoardCell(WALL, wall)
             walls.add(wall)
 
-        for i in range(len(board)):
-            for j in range(len(board[0])):
-                if random.random() > .9 and board[i][j].status == EMPTY:
+        for _ in range(random.randint(1, 5)):
+            start_x = random.randrange(1, BOARD_WIDTH - 1)
+            start_y = random.randrange(1, BOARD_HEIGHT - 1)
+            goal_x = random.randrange(1, BOARD_WIDTH - 1)
+            goal_y = random.randrange(1, BOARD_HEIGHT - 1)
+            path = path_finding.a_star_no_wall_avoidance(self.board, (start_x, start_y), (goal_x, goal_y))
+            if path:
+                for cell in path:
+                    i = cell[1]
+                    j = cell[0]
                     wall = self.model.Wall(j * BITS, i * BITS)
                     board[i][j] = BoardCell(WALL, wall)
                     walls.add(wall)
 
-        # TODO combine close walls and connect some random ones
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if random.random() > .95 and board[i][j].status == EMPTY:
+                    wall = self.model.Wall(j * BITS, i * BITS)
+                    board[i][j] = BoardCell(WALL, wall)
+                    walls.add(wall)
+
 
     def generate_new_level(self):
         row = [BoardCell(EMPTY, None)] * BOARD_WIDTH
@@ -84,9 +105,11 @@ class TankWarsController():
 
         self.screen.fill(SURFACE_COLOR)
         self.bgd = self.screen.copy()
+        
+        self.level_duration = 0
 
         self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board, self.bombs))
-        for _ in range(random.randint(1,1)): # TODO choose number of tanks range with wave number
+        for _ in range((self.level % 6) + 1):
             enemy_x = random.randrange(1, BOARD_WIDTH - 1)
             enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
             while self.board[enemy_y][enemy_x].status != EMPTY:
@@ -96,6 +119,7 @@ class TankWarsController():
             self.enemy_tanks.add(self.model.Enemy_Tank(enemy_x * BITS, enemy_y * BITS, ENEMY_TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
 
         self.generate_walls(self.board, self.walls)
+        self.level += 1
 
     def start(self):
         exit = True
@@ -106,19 +130,34 @@ class TankWarsController():
                 if event.type == pygame.QUIT:
                     exit = False
 
-            if len(self.enemy_tanks.sprites()) == 0 or len(self.player_tanks.sprites()) == 0:
-                self.generate_new_level()
+            if self.menu:
+                self.view.draw_menu(self.screen, MENU_COLOR, FONT_COLOR, self.font, self.level)
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_RETURN]:
+                    self.menu = False
+                    self.screen.fill(SURFACE_COLOR)
+                    self.level = 0
+                    self.generate_new_level()
+            else:
+                if len(self.player_tanks.sprites()) == 0:
+                    self.menu = True
 
-            mouse_pressed = pygame.mouse.get_pressed()
-            keys = pygame.key.get_pressed()
+                if len(self.enemy_tanks.sprites()) == 0:
+                    self.generate_new_level()
 
-            self.player_tanks.update(keys, mouse_pressed, self.walls, self.enemy_tanks, self.screen)
-            for tank in self.player_tanks:
-                self.player_pos = tank.get_pos()
-            self.enemy_tanks.update(self.player_pos, self.walls, self.screen)
-            self.bullets.update(self.player_tanks, self.enemy_tanks)
-            self.bombs.update()
-            self.view.draw_game(self.screen, self.bgd, self.sprites)
+                self.level_duration += 1
+
+                mouse_pressed = pygame.mouse.get_pressed()
+                keys = pygame.key.get_pressed()
+
+                self.player_tanks.update(keys, mouse_pressed, self.walls)
+                for tank in self.player_tanks:
+                    self.player_pos = tank.get_pos()
+                self.enemy_tanks.update(self.player_pos, self.walls, self.level_duration, self.enemy_tanks)
+                self.bullets.update(self.player_tanks, self.enemy_tanks)
+                self.bombs.update()
+                self.view.draw_game(self.screen, self.bgd, self.sprites)
+
             clock.tick(FPS)
 
         pygame.quit()
