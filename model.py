@@ -12,10 +12,6 @@ WALL = 1
 TANK = 2
 BOMB = 3
 
-RIGHT_ANGLE = 270
-UP_ANGLE = 0
-LEFT_ANGLE = 90
-DOWN_ANGLE = 180
 
 class Player_Tank(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[BoardCell]], bombs: pygame.sprite.Group):
@@ -240,6 +236,7 @@ class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
 
         self.rect.x = x
         self.rect.y = y
+        self.bullet_hit_sound = pygame.mixer.Sound('assets/bullet_hit.wav')
 
     def update(self, player_tanks: pygame.sprite.Group, enemy_tanks: pygame.sprite.Group):
         movement_vector = pygame.math.Vector2(self.movement_vector)
@@ -249,17 +246,20 @@ class Bullet(pygame.sprite.Sprite): # TODO fix rounded slope to be float
 
         collision = raycast(self.rect, next_position, movement_vector, player_tanks)
         if collision and collision.sprite != self.parent:
+            pygame.mixer.Sound.play(self.bullet_hit_sound)
             collision.sprite.kill()
             self.kill()
 
         collision = raycast(self.rect, next_position, movement_vector, enemy_tanks)
         if collision and collision.sprite != self.parent:
+            pygame.mixer.Sound.play(self.bullet_hit_sound)
             collision.sprite.kill()
             self.kill()
 
         collision = raycast(self.rect, next_position, movement_vector, self.walls)
         if collision:
             if self.bounces > 0:
+                pygame.mixer.Sound.play(self.bullet_hit_sound)
                 self.kill()
             else:
                 self.bounces += 1

@@ -15,7 +15,7 @@ ENEMY_TANK_SPEED = 1
 BOARD_WIDTH = 23
 BOARD_HEIGHT = 17
 BULLET_SPEED = 5
-MAX_BULLETS = 2
+MAX_BULLETS = 4
 
 FPS = 60
 
@@ -73,8 +73,15 @@ class TankWarsController():
         for _ in range(random.randint(1, 5)):
             start_x = random.randrange(1, BOARD_WIDTH - 1)
             start_y = random.randrange(1, BOARD_HEIGHT - 1)
+            while board[start_y][start_x].status != EMPTY:
+                start_x = random.randrange(1, BOARD_WIDTH - 1)
+                start_y = random.randrange(1, BOARD_HEIGHT - 1)
+
             goal_x = random.randrange(1, BOARD_WIDTH - 1)
             goal_y = random.randrange(1, BOARD_HEIGHT - 1)
+            while board[goal_y][goal_x].status != EMPTY:
+                goal_x = random.randrange(1, BOARD_WIDTH - 1)
+                goal_y = random.randrange(1, BOARD_HEIGHT - 1)
             path = path_finding.a_star_no_wall_avoidance(self.board, (start_x, start_y), (goal_x, goal_y))
             if path:
                 for cell in path:
