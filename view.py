@@ -1,4 +1,3 @@
-from typing import Optional
 import pygame
 
 def draw_menu(screen: pygame.Surface, MENU_COLOR: tuple, FONT_COLOR: tuple, font: pygame.font, level: int):

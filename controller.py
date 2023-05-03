@@ -30,7 +30,7 @@ class TankWarsController():
         self.walls = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
         self.bombs = pygame.sprite.Group()
-        self.sprites = [self.enemy_tanks, self.walls, self.bullets, self.bombs, self.player_tanks]
+        self.sprites = [self.walls, self.enemy_tanks, self.bullets, self.bombs, self.player_tanks]
         self.player_pos = ()
         self.level = 0
         self.level_duration = 0
@@ -50,12 +50,12 @@ class TankWarsController():
         self.bgd = self.screen
 
     def generate_walls(self, board: list[list[BoardCell]], walls: pygame.sprite.Group):
-        for j in range(len(board[0])):
+        for j in range(1, len(board[0]) - 1):
             wall = self.model.Wall(j * BITS, 0 * BITS)
             board[0][j] = BoardCell(WALL, wall)
             walls.add(wall)
 
-        for j in range(len(board[0])):
+        for j in range(1, len(board[0]) - 1):
             wall = self.model.Wall(j * BITS, (len(board) - 1) * BITS)
             board[-1][j] = BoardCell(WALL, wall)
             walls.add(wall)
@@ -87,9 +87,10 @@ class TankWarsController():
                 for cell in path:
                     i = cell[1]
                     j = cell[0]
-                    wall = self.model.Wall(j * BITS, i * BITS)
-                    board[i][j] = BoardCell(WALL, wall)
-                    walls.add(wall)
+                    if board[i][j].status == EMPTY:
+                        wall = self.model.Wall(j * BITS, i * BITS)
+                        board[i][j] = BoardCell(WALL, wall)
+                        walls.add(wall)
 
         for i in range(len(board)):
             for j in range(len(board[0])):
@@ -131,6 +132,9 @@ class TankWarsController():
     def start(self):
         exit = True
         clock = pygame.time.Clock()
+
+        background_sound = pygame.mixer.Sound('assets/background.wav')
+        pygame.mixer.Sound.play(background_sound, -1)
 
         while exit:
             for event in pygame.event.get():
