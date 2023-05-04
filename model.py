@@ -43,8 +43,8 @@ class Player_Tank(pygame.sprite.Sprite):
         if mouse_pressed[0]:
             if not self.debounce and len(self.shot_bullets.sprites()) < self.max_bullets:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                x = self.rect.x + (BITS / 2)
-                y = self.rect.y + (BITS / 2)
+                x = self.rect.centerx
+                y = self.rect.centery
                 movement_vector = pygame.math.Vector2(mouse_x - x, mouse_y - y)
                 bullet = Bullet(x, y, movement_vector,
                                 self.bullet_speed, walls, self)
@@ -219,14 +219,14 @@ class Enemy_Tank(pygame.sprite.Sprite):
         enemy_tank_collision = raycast(
             test_bullet, next_position, movement_vector, enemy_tanks)
 
-        if level_duration > 120 and not wall_collision and not enemy_tank_collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
-            bullet = Bullet(self.rect.centerx, self.rect.centery, movement_vector, self.bullet_speed, walls, self)
-            self.shot_bullets.add(bullet)
-            self.bullets.add(bullet)
-            self.cooldown = 120
-        else:
-            if self.cooldown > 0:
-                self.cooldown -= 1
+        # if level_duration > 120 and not wall_collision and not enemy_tank_collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
+        #     bullet = Bullet(self.rect.centerx, self.rect.centery, movement_vector, self.bullet_speed, walls, self)
+        #     self.shot_bullets.add(bullet)
+        #     self.bullets.add(bullet)
+        #     self.cooldown = 120
+        # else:
+        #     if self.cooldown > 0:
+        #         self.cooldown -= 1
 
     def kill(self):
         kill_sound = pygame.mixer.Sound('assets/tank_kill.mp3')
@@ -248,6 +248,8 @@ class Bullet(pygame.sprite.Sprite):  # TODO fix rounded slope to be float
         self.walls = walls
         self.rect = self.image.get_rect()
         self.parent = parent
+        self.x = x
+        self.y = y
 
         self.rect.x = x
         self.rect.y = y
@@ -255,9 +257,12 @@ class Bullet(pygame.sprite.Sprite):  # TODO fix rounded slope to be float
 
     def update(self, player_tanks: pygame.sprite.Group, enemy_tanks: pygame.sprite.Group):
         movement_vector = pygame.math.Vector2(self.movement_vector)
-        movement_vector.normalize_ip()
+        if movement_vector.length() != 0:
+            movement_vector.normalize_ip()
         movement_vector *= self.speed
         next_position = self.rect.move(movement_vector)
+        self.x += movement_vector.x
+        self.y += movement_vector.y
 
         collision = raycast(self.rect, next_position,
                             movement_vector, player_tanks)
@@ -282,9 +287,12 @@ class Bullet(pygame.sprite.Sprite):  # TODO fix rounded slope to be float
             else:
                 self.bounces += 1
                 movement_vector = pygame.math.Vector2(self.movement_vector)
-                movement_vector.normalize_ip()
+                if movement_vector.length() != 0:
+                    movement_vector.normalize_ip()
                 movement_vector *= collision.distance
                 next_position = self.rect.move(movement_vector)
+                self.x = next_position.x
+                self.y = next_position.y
 
                 if collision.side == LEFT_SIDE or collision.side == RIGHT_SIDE:
                     self.movement_vector = self.movement_vector[0] * - \
@@ -292,7 +300,8 @@ class Bullet(pygame.sprite.Sprite):  # TODO fix rounded slope to be float
                 else:
                     self.movement_vector = self.movement_vector[0], self.movement_vector[1] * -1
 
-        self.rect = next_position
+        self.rect.x = self.x
+        self.rect.y = self.y
 
 
 class Wall(pygame.sprite.Sprite):
