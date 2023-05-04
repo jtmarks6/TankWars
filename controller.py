@@ -16,6 +16,9 @@ BOARD_WIDTH = 23
 BOARD_HEIGHT = 17
 BULLET_SPEED = 5
 MAX_BULLETS = 4
+MAX_ENEMY_TANKS = 6
+RANDOM_WALL_CHANCE = 1 - .05
+BULLET_SPEED_LEVEL_INCREASE = .2
 
 FPS = 60
 
@@ -94,7 +97,7 @@ class TankWarsController():
 
         for i in range(len(board)):
             for j in range(len(board[0])):
-                if random.random() > .95 and board[i][j].status == EMPTY:
+                if random.random() > RANDOM_WALL_CHANCE and board[i][j].status == EMPTY:
                     wall = self.model.Wall(j * BITS, i * BITS)
                     board[i][j] = BoardCell(WALL, wall)
                     walls.add(wall)
@@ -117,14 +120,14 @@ class TankWarsController():
         self.level_duration = 0
 
         self.player_tanks.add(self.model.Player_Tank(random.randrange(1, BOARD_WIDTH - 1) * BITS, random.randrange(1, BOARD_HEIGHT - 1) * BITS, TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board, self.bombs))
-        for _ in range((self.level % 6) + 1):
+        for _ in range((self.level % MAX_ENEMY_TANKS) + 1):
             enemy_x = random.randrange(1, BOARD_WIDTH - 1)
             enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
             while self.board[enemy_y][enemy_x].status != EMPTY:
                 enemy_x = random.randrange(1, BOARD_WIDTH - 1)
                 enemy_y = random.randrange(1, BOARD_HEIGHT - 1)
 
-            self.enemy_tanks.add(self.model.Enemy_Tank(enemy_x * BITS, enemy_y * BITS, ENEMY_TANK_SPEED, BULLET_SPEED, MAX_BULLETS, self.bullets, self.board))
+            self.enemy_tanks.add(self.model.Enemy_Tank(enemy_x * BITS, enemy_y * BITS, ENEMY_TANK_SPEED, BULLET_SPEED + (BULLET_SPEED_LEVEL_INCREASE * self.level), MAX_BULLETS, self.bullets, self.board))
 
         self.generate_walls(self.board, self.walls)
         self.level += 1

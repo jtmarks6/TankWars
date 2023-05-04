@@ -12,6 +12,10 @@ WALL = 1
 TANK = 2
 BOMB = 3
 
+BOMB_TIMER = 120
+ENEMY_SHOOT_DELAY = 120
+TANK_PICTURE_ANGLE_OFFSET = 90
+KILL_SOUND_VOLUME = .60
 
 class Player_Tank(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, speed: int, bullet_speed: int, max_bullets: int, bullets: pygame.sprite.Group, board: list[list[BoardCell]], bombs: pygame.sprite.Group):
@@ -55,7 +59,7 @@ class Player_Tank(pygame.sprite.Sprite):
             self.debounce = False
 
         if keys[pygame.K_SPACE] and len(self.dropped_bombs) == 0:
-            bomb = Bomb(self.rect.centerx, self.rect.centery, 120, self.board)
+            bomb = Bomb(self.rect.centerx, self.rect.centery, BOMB_TIMER, self.board)
             self.bombs.add(bomb)
             self.dropped_bombs.add(bomb)
 
@@ -90,7 +94,7 @@ class Player_Tank(pygame.sprite.Sprite):
 
         if dy or dx:
             direction = math.atan2(dy, dx)
-            angle = math.degrees(-direction) - 90
+            angle = math.degrees(-direction) - TANK_PICTURE_ANGLE_OFFSET
             old_center = self.rect.center
             self.image = pygame.transform.rotate(self.original_image, angle)
             self.rect = self.image.get_rect(center=old_center)
@@ -137,7 +141,7 @@ class Enemy_Tank(pygame.sprite.Sprite):
         self.board[y // BITS][x // BITS] = BoardCell(TANK, self)
 
     def update(self, player_pos: pygame.rect, walls: pygame.sprite.Group, level_duration: int, enemy_tanks: pygame.sprite.Group):
-        player_board_pos = (player_pos.centerx // 32, player_pos.centery // 32)
+        player_board_pos = (player_pos.centerx // BITS, player_pos.centery // BITS)
 
         def find_path():
             start_pos = (self.rect.x // BITS, self.rect.y // BITS)
@@ -175,7 +179,7 @@ class Enemy_Tank(pygame.sprite.Sprite):
                 self.rect.x += math.cos(direction) * self.speed
                 self.rect.y += math.sin(direction) * self.speed
 
-                angle = math.degrees(-direction) - 90
+                angle = math.degrees(-direction) - TANK_PICTURE_ANGLE_OFFSET
                 self.image = pygame.transform.rotate(
                     self.original_image, angle)
                 self.rect = self.image.get_rect(center=self.rect.center)
@@ -205,7 +209,7 @@ class Enemy_Tank(pygame.sprite.Sprite):
             next_position = test_bullet.move(movement_vector)
             collision = raycast(test_bullet, next_position,
                                 movement_vector, walls)
-            if collision or level_duration < 120:
+            if collision or level_duration < ENEMY_SHOOT_DELAY:
                 find_path()
 
         ray_to_player_x = player_pos.centerx - self.rect.centerx
@@ -219,25 +223,25 @@ class Enemy_Tank(pygame.sprite.Sprite):
         enemy_tank_collision = raycast(
             test_bullet, next_position, movement_vector, enemy_tanks)
 
-        if level_duration > 120 and not wall_collision and not enemy_tank_collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
+        if level_duration > ENEMY_SHOOT_DELAY and not wall_collision and not enemy_tank_collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
             bullet = Bullet(self.rect.centerx, self.rect.centery, movement_vector, self.bullet_speed, walls, self)
             self.shot_bullets.add(bullet)
             self.bullets.add(bullet)
-            self.cooldown = 120
+            self.cooldown = ENEMY_SHOOT_DELAY
         else:
             if self.cooldown > 0:
                 self.cooldown -= 1
 
     def kill(self):
         kill_sound = pygame.mixer.Sound('assets/tank_kill.mp3')
-        kill_sound.set_volume(.60)
+        kill_sound.set_volume(KILL_SOUND_VOLUME)
         pygame.mixer.Sound.play(kill_sound)
         pygame.sprite.Sprite.kill(self)
         self.board[self.last_board_pos[1]
                    ][self.last_board_pos[0]] = BoardCell(EMPTY, None)
 
 
-class Bullet(pygame.sprite.Sprite):  # TODO fix rounded slope to be float
+class Bullet(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, movement_vector: pygame.math.Vector2, speed: int, walls: pygame.sprite.Group, parent: pygame.sprite):
         super().__init__()
 
@@ -330,7 +334,7 @@ class Bomb(pygame.sprite.Sprite):
         self.rect.y = self.y * BITS
         self.bomb_sound = pygame.mixer.Sound('assets/bomb.mp3')
 
-    def update(self):  # TODO walls sometimes don't break
+    def update(self):
         if self.fuse == 0:
             pygame.mixer.Sound.play(self.bomb_sound)
             if self.x + 1 < len(self.board[0]) - 1:
