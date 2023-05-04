@@ -219,14 +219,14 @@ class Enemy_Tank(pygame.sprite.Sprite):
         enemy_tank_collision = raycast(
             test_bullet, next_position, movement_vector, enemy_tanks)
 
-        # if level_duration > 120 and not wall_collision and not enemy_tank_collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
-        #     bullet = Bullet(self.rect.centerx, self.rect.centery, movement_vector, self.bullet_speed, walls, self)
-        #     self.shot_bullets.add(bullet)
-        #     self.bullets.add(bullet)
-        #     self.cooldown = 120
-        # else:
-        #     if self.cooldown > 0:
-        #         self.cooldown -= 1
+        if level_duration > 120 and not wall_collision and not enemy_tank_collision and self.cooldown <= 0 and len(self.shot_bullets.sprites()) < self.max_bullets:
+            bullet = Bullet(self.rect.centerx, self.rect.centery, movement_vector, self.bullet_speed, walls, self)
+            self.shot_bullets.add(bullet)
+            self.bullets.add(bullet)
+            self.cooldown = 120
+        else:
+            if self.cooldown > 0:
+                self.cooldown -= 1
 
     def kill(self):
         kill_sound = pygame.mixer.Sound('assets/tank_kill.mp3')

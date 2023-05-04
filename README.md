@@ -6,19 +6,19 @@ Tank Wars will be a similar game to the tank game from WiiPlay. The goal is to s
 
 # Controls
 - `WASD` for movement
+- `Mouse` to aim bullets
 - `Left mouse click` to shoot bullets
+- `Space` to drop a bomb
+- `Enter` to start the game
+
+## Setup
+- Run `pip install pygame`
+
+# Start Game
+- Run `python3 main.py`
 
 ![Game Preview](assets/game_preview.png)
 
-## Current Progress
-- The player tank can move around with wasd keys and will collide with walls
-- Left click will shoot a bullet toward the mouse location
-- Bullets will bounce once off any walls then be removed from the game
-- Walls are randomly placed upon starting the game
+![Game Preview](assets/game_design.png)
 
-![Game Preview](assets/current_progress.png)
-
-[Video of current progress](https://youtu.be/XLVG5Eh4Rpg)
-
-# Run Game
-`python3 main.py`
+[Game Preview Video](https://youtu.be/wgiLZvBLlPg)
